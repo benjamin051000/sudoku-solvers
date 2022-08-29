@@ -22,7 +22,10 @@ $(BUILD_DIR)/%.o: $(SRCS)
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-.PHONY: clean
+.PHONY: clean run
 clean:
 	rm -rf $(BUILD_DIR) $(EXEC)
+
+run: $(EXEC)
+	./$(EXEC)
 
