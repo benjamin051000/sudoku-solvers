@@ -1,6 +1,6 @@
 # Mostly from makefiletutorial.com
 EXEC := sudoku
-CFLAGS := -Wall -Wextra -Werror -Wunused
+CFLAGS := -O3 -Wall -Wextra -Wunused -Wshadow -pedantic -Wwrite-strings
 
 BUILD_DIR := ./build
 SRC_DIRS := .
@@ -15,7 +15,7 @@ OBJS := $(SRCS:%.c=$(BUILD_DIR)/%.o)
 
 # The final build step.
 $(EXEC): $(OBJS)
-	$(CC) $(OBJS) -o $@
+	$(CC) $(CFLAGS) $(OBJS) -o $@
 
 # Build step for C source
 $(BUILD_DIR)/%.o: $(SRCS)
@@ -27,5 +27,5 @@ clean:
 	rm -rf $(BUILD_DIR) $(EXEC)
 
 run: $(EXEC)
-	./$(EXEC)
+	./$(EXEC) sudoku1.txt
 
