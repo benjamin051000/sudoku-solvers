@@ -1,6 +1,6 @@
 # Mostly from makefiletutorial.com
 EXEC := sudoku
-CFLAGS := -O3 -Wall -Wextra -Wunused -Wshadow -pedantic -Wwrite-strings
+CFLAGS := -O3 -Wall -Wextra -Wunused -Wshadow -pedantic -Wwrite-strings -D _DEBUG -g -Wunused-value
 
 BUILD_DIR := ./build
 SRC_DIRS := .
