@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <math.h>
 
 // Helpful way to compile out debug code
 #ifdef _DEBUG
@@ -91,6 +92,33 @@ void print_board(const int* const b) {
 }
 )
 
+struct coord {
+    bool seen;
+    int r, c;
+};
+
+void check_if_seen(int val, int r, int c, struct coord* nums) {
+    D(printf("(%d, %d)\t", r, c);)
+
+    if(val == 0) { // 0 means empty
+        D(printf("val: 0, skipping\n");)
+        return; 
+    }
+
+    struct coord obj = nums[val];
+
+    D(printf("val: %d,\tnums[val]: seen=%d, r=%d, c=%d\n", val, obj.seen,  obj.r, obj.c);)
+
+    if(obj.seen) {
+        // This is a duplicate!
+        printf("Board invalid: (%d, %d) and (%d, %d) are both %d.\n",
+                r, c, obj.r, obj.c, val);
+        exit(EXIT_FAILURE);
+    } // if
+    // We've seen this number
+    nums[val] = (struct coord) {.seen = true, .r = r, .c = c};
+}
+
 /**
  * Determine if the board is in a valid state.
  * Valid state is defined as no duplicate numbers in any
@@ -99,13 +127,7 @@ void print_board(const int* const b) {
  * If the state is invalid, report the 
  * coords of duplicate numbers and terminate.
  */
-void board_valid(const int* const board) {
-    struct coord {
-        bool seen;
-        int r;
-        int c;
-    };
-
+void row_valid(const int* const board) {
     // First, check each row.
     // Use a list of bools to tell if it's in the set.
     struct coord nums[NCOLS+1]; // add 1 so that we can index by num, nums[0] is invalid
@@ -120,32 +142,68 @@ void board_valid(const int* const board) {
 
         // Check if there are any duplicates
         for(int c = 0; c < NCOLS; c++) {
-            D(printf("(%d, %d)\t", r, c);)
-
             int val = row[c];
-            if(val == 0) { // 0 means empty
-                D(printf("val: 0, skipping\n");)
-                continue; 
-            }
-
-            struct coord obj = nums[val];
-
-            D(printf("val: %d,\tnums[val]: seen=%d, r=%d, c=%d\n", val, obj.seen,  obj.r, obj.c);)
-
-            if(obj.seen) {
-                // This is a duplicate!
-                printf("Board invalid: (%d, %d) and (%d, %d) are both %d.\n",
-                        r, c, obj.r, obj.c, val);
-                exit(EXIT_FAILURE);
-            } // if
-            // We've seen this number
-            nums[val] = (struct coord) {.seen = true, .r = r, .c = c};
+            check_if_seen(val, r, c, nums);
         } // for c
     } // for i
 
     // Next, check each column.
     // Next, check each square in the grid.
-    printf("If you made it here, it must be valid.\n");
+    printf("If you made it here, the rows must be valid.\n");
+}
+
+void col_valid(const int* const board) {
+    // First, check each row.
+    // Use a list of bools to tell if it's in the set.
+    struct coord nums[NCOLS+1]; // add 1 so that we can index by num, nums[0] is invalid
+
+    for(int c = 0; c < NCOLS; c++) {
+        // Reset what we've seen in this row
+        for(int i = 0; i < NCOLS+1; i++) 
+            nums[i] = (struct coord) {.seen = false, .r = -1, .c = -1};
+
+
+        // Check if there are any duplicates
+        for(int r = 0; r < NROWS; r++) {
+            // Pointer to this row (for convenience)
+            const int* const row = board + r * NCOLS;
+            int val = row[c];
+            check_if_seen(val, r, c, nums);
+        } // for c
+    } // for i
+
+    // Next, check each column.
+    // Next, check each square in the grid.
+    printf("If you made it here, the cols must be valid.\n");
+}
+
+
+void square_valid(const int* const board) {
+    // Use a list of bools to tell if it's in the set.
+    struct coord nums[NCOLS+1]; // add 1 so that we can index by num, nums[0] is invalid
+    
+    const int SUBSQUARE_LEN = (int)sqrt(NROWS);
+    const int NUM_SUBSQUARES = NROWS / SUBSQUARE_LEN;
+
+    for(int subsquare_row = 0; subsquare_row < NUM_SUBSQUARES; subsquare_row++) {
+        const int min_row = SUBSQUARE_LEN * subsquare_row;
+        const int max_row = min_row + SUBSQUARE_LEN;
+
+        for(int subsquare_col = 0; subsquare_col < NUM_SUBSQUARES; subsquare_col++) {
+            const int min_col = SUBSQUARE_LEN * subsquare_col;
+            const int max_col = min_col + SUBSQUARE_LEN;
+
+            // Traverse through each row in the subsquare rows.
+            for(int r = min_row; r < max_row; r++) {
+                for(int c = min_col; c < max_col; c++) {
+                    const int* const row = board + r * subsquare_row * NCOLS;
+                    int val = row[c * subsquare_col];
+                    check_if_seen(val, r, c, nums);
+                }
+            }
+        }
+    }
+    printf("If you made it here, the squares must be valid.\n");
 }
 
 
@@ -166,7 +224,10 @@ int main(int argc, char** argv) {
 
     D(print_board((const int* const)board);)
 
-    board_valid((const int* const) board); 
+    // Is the board in a valid state?
+    row_valid((const int* const) board); 
+    col_valid((const int* const) board); 
+    square_valid((const int* const) board); 
 
     // Cleanup
     munmap((char*)buf, sizeof(buf));
