@@ -81,7 +81,6 @@ int* create_board(const char* const buf) {
     return b;
 }
 
-D(
 void print_board(const int* const b) {
     printf("printing board-------------\n");
     for(int i = 0; i < NROWS; i++) {
@@ -92,34 +91,43 @@ void print_board(const int* const b) {
     }
     printf("---------------------------\n");
 }
-)
 
-struct coord {
+struct coord { // TODO rename
     bool seen;
     int r, c;
 };
 
-void check_if_seen(int val, int r, int c, struct coord* nums) {
-    DP("(%d, %d)\t", r, c)
+/**
+ * Return true if we have seen val before.
+ * nums keeps track of what we've seen.
+ */
+bool seen_before(int val, int r, int c, struct coord* nums) {
+    //DP("(%d, %d)\t", r, c)
 
     if(val == 0) { // 0 means empty
-        DP("val: 0, skipping\n")
-        return; 
+        //DP("val: 0, skipping\n")
+        return false; // Doesn't apply
     }
 
     struct coord obj = nums[val];
 
-    DP("val: %d,\tnums[val]: seen=%d, r=%d, c=%d\n", val, obj.seen,  obj.r, obj.c)
+    //DP("val: %d,\tnums[val]: seen=%d, r=%d, c=%d\n", val, obj.seen,  obj.r, obj.c)
 
     if(obj.seen) {
         // This is a duplicate!
         printf("Board invalid: (%d, %d) and (%d, %d) are both %d.\n",
                 r, c, obj.r, obj.c, val);
-        exit(EXIT_FAILURE);
+        return true;
     } // if
     // We've seen this number
     nums[val] = (struct coord) {.seen = true, .r = r, .c = c};
+    return false;
 }
+
+enum state {
+    INVALID = false,
+    VALID = true,
+};
 
 /**
  * Determine if the board is in a valid state.
@@ -129,7 +137,7 @@ void check_if_seen(int val, int r, int c, struct coord* nums) {
  * If the state is invalid, report the 
  * coords of duplicate numbers and terminate.
  */
-void row_valid(const int* const board) {
+enum state row_valid(const int* const board) {
     // First, check each row.
     // Use a list of bools to tell if it's in the set.
     struct coord nums[NCOLS+1]; // add 1 so that we can index by num, nums[0] is invalid
@@ -145,16 +153,19 @@ void row_valid(const int* const board) {
         // Check if there are any duplicates
         for(int c = 0; c < NCOLS; c++) {
             int val = row[c];
-            check_if_seen(val, r, c, nums);
+            if(seen_before(val, r, c, nums)) {
+                return INVALID;
+            }
         } // for c
     } // for i
 
     // Next, check each column.
     // Next, check each square in the grid.
-    DP("Rows valid.\n")
+    DP("\tRows valid.\n")
+    return VALID;
 }
 
-void col_valid(const int* const board) {
+enum state col_valid(const int* const board) {
     // First, check each row.
     // Use a list of bools to tell if it's in the set.
     struct coord nums[NCOLS+1]; // add 1 so that we can index by num, nums[0] is invalid
@@ -170,17 +181,21 @@ void col_valid(const int* const board) {
             // Pointer to this row (for convenience)
             const int* const row = board + r * NCOLS;
             int val = row[c];
-            check_if_seen(val, r, c, nums);
+            if(seen_before(val, r, c, nums)) {
+                return INVALID;
+            }
+
         } // for c
     } // for i
 
     // Next, check each column.
     // Next, check each square in the grid.
-    DP("Columns valid.\n")
+    DP("\tColumns valid.\n")
+    return VALID;
 }
 
 
-void square_valid(const int* const board) {
+enum state square_valid(const int* const board) {
     // Use a list of bools to tell if it's in the set.
     struct coord nums[NCOLS+1]; // add 1 so that we can index by num, nums[0] is invalid
     
@@ -207,22 +222,92 @@ void square_valid(const int* const board) {
                 for(int c = min_col; c < max_col; c++) {
                     const int col = c;
                     int val = row[col];
-                    check_if_seen(val, r, c, nums);
+                    if(seen_before(val, r, c, nums)) {
+                        return INVALID;
+                    }
                 }
             } // check loop
         } // subsquare col
     } // subsquare row
-    DP("Subsquares are valid.\n")
+    DP("\tSubsquares valid.\n")
+    return VALID;
 }
+
+/**
+ * Check whether the sudoku board is
+ * in a valid state.
+ * 1. Check rows
+ * 2. Check columns
+ * 3. Check subsquares
+ * If any of these three groups have duplicate numbers,
+ * then the board is not in a valid state.
+ */
+enum state verify(const int* const board) {
+    if(!row_valid(board) || !col_valid(board) || !square_valid(board)) {
+        DP("Invalid.\n")
+        return INVALID;
+    }
+
+    DP("Valid\n")
+    return VALID;
+}
+
+enum solve_state {
+    UNSOLVED = false,
+    SOLVED = true
+};
 
 /**
  * While there are spaces still on the board,
  * try to fill it with a value (starting with 1).
  * See if the board is still valid and/or complete.
  * Otherwise, backtrack and try another number.
+ *
+ * Returns: a state, whether the board was solved or not.
  */
-//void solve(int* const board) {
-//}
+enum solve_state solve(int* const board) {
+
+    // Is the current board valid?
+    if(!verify((const int* const)board)) {
+        return UNSOLVED;
+    }
+    // If we got here, it is.
+
+    // Find the first empty (0) space.
+    int r, c;
+    int* val;
+    for(r = 0; r < NROWS; r++) {
+        for(c = 0; c < NCOLS; c++) {
+            val = &board[r * NROWS + c];
+            if(*val == 0)
+                goto next_val_found;
+        } // for c
+    } // for r
+    
+    // There were no empty spaces left and we 
+    // passed the validity check. 
+    // Therefore, the board is solved.
+    return SOLVED;
+    
+next_val_found:
+    // Try values until one sticks.
+    for(int i = 1; i <= 9; i++) {
+        DP("Next move: (%d, %d) => %d\n", r, c, i)
+        *val = i;
+        // Try to solve the new board.
+        if(solve(board)) {
+            return SOLVED;
+        }
+        // else, try a new value
+    }
+
+    // We exhausted all 9. That means
+    // we messed up before this tile.
+    // Reset the value back to 0
+    *val = 0;
+    // Go back and try something else.
+    return UNSOLVED;
+}
 
 
 int main(int argc, char** argv) {
@@ -233,15 +318,19 @@ int main(int argc, char** argv) {
 
 	// Get string input from stdin
     const char* const buf = read_file(argv[1]);
-    int* board = create_board(buf);
+    int* const board = create_board(buf);
 
     D(print_board((const int* const)board);)
 
-    // Is the board in a valid state?
-    row_valid((const int* const) board); 
-    col_valid((const int* const) board); 
-    square_valid((const int* const) board); 
+    // Attempt a board solve.
+    if(solve(board)) {
+        printf("Solved!\n");
+    }
+    else {
+        printf("Board is unsolvable.\n");
+    }
 
+    print_board((const int* const)board);
     // Cleanup
     munmap((char*)buf, sizeof(buf));
     free(board);
