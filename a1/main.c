@@ -82,20 +82,22 @@ int* create_board(const char* const buf) {
 }
 
 void print_board(const int* const b) {
-    printf("printing board-------------\n");
+    printf("-----------------\n");
     for(int i = 0; i < NROWS; i++) {
         for(int j = 0; j < NCOLS; j++) {
             printf("%d ", b[i * NROWS + j]); 
         }
         printf("\n");
     }
-    printf("---------------------------\n");
+    printf("-----------------\n");
 }
 
 struct coord { // TODO rename
     bool seen;
     int r, c;
 };
+
+char ERR_MSG[128];
 
 /**
  * Return true if we have seen val before.
@@ -115,7 +117,8 @@ bool seen_before(int val, int r, int c, struct coord* nums) {
 
     if(obj.seen) {
         // This is a duplicate!
-        printf("Board invalid: (%d, %d) and (%d, %d) are both %d.\n",
+        // This may be printed later if the board is rendered unsolvable. 
+        snprintf(ERR_MSG, sizeof(ERR_MSG), "(%d, %d) and (%d, %d) are both %d.\n",
                 r, c, obj.r, obj.c, val);
         return true;
     } // if
@@ -316,24 +319,29 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-	// Get string input from stdin
+    // Get string input from stdin
     const char* const buf = read_file(argv[1]);
     int* const board = create_board(buf);
 
-    D(print_board((const int* const)board);)
+    printf("Loaded board:\n");
+    print_board((const int* const)board);
+    printf("Solving... ");
 
     // Attempt a board solve.
     if(solve(board)) {
         printf("Solved!\n");
+        print_board((const int* const)board);
     }
     else {
-        printf("Board is unsolvable.\n");
+        printf("Error: Board is unsolvable.\n");
+        printf("%s", ERR_MSG);
     }
 
-    print_board((const int* const)board);
     // Cleanup
     munmap((char*)buf, sizeof(buf));
     free(board);
-	return 0;
+
+    printf("Done.\n");
+    return 0;
 }
 

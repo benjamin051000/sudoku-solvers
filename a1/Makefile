@@ -1,6 +1,6 @@
 # Mostly from makefiletutorial.com
 EXEC := sudoku
-CFLAGS := -O3 -Wall -Wextra -Wunused -Wshadow -pedantic -Wwrite-strings -D _DEBUG -g -Wunused-value
+CFLAGS := -O3 -Wall -Wextra -Wunused -Wshadow -pedantic -Wwrite-strings -Wunused-value
 ARGS := "sudoku1.txt"
 
 BUILD_DIR := ./build
