@@ -11,8 +11,10 @@
 // Helpful way to compile out debug code
 #ifdef _DEBUG
 #define D(x) x
+#define DP(...) printf(__VA_ARGS__);
 #else
 #define D(x)
+#define DP(...)
 #endif
 
 // Standard sudoku board: 9x9.
@@ -65,7 +67,7 @@ int* create_board(const char* const buf) {
     int i = 0;
 
     char* const s = strdup(buf);
-    char* token = strtok(s, (char*)delim);
+    const char* token = strtok(s, (char*)delim);
     
     while(token) {
         // A "better" version of atoi
@@ -98,16 +100,16 @@ struct coord {
 };
 
 void check_if_seen(int val, int r, int c, struct coord* nums) {
-    D(printf("(%d, %d)\t", r, c);)
+    DP("(%d, %d)\t", r, c)
 
     if(val == 0) { // 0 means empty
-        D(printf("val: 0, skipping\n");)
+        DP("val: 0, skipping\n")
         return; 
     }
 
     struct coord obj = nums[val];
 
-    D(printf("val: %d,\tnums[val]: seen=%d, r=%d, c=%d\n", val, obj.seen,  obj.r, obj.c);)
+    DP("val: %d,\tnums[val]: seen=%d, r=%d, c=%d\n", val, obj.seen,  obj.r, obj.c)
 
     if(obj.seen) {
         // This is a duplicate!
@@ -149,7 +151,7 @@ void row_valid(const int* const board) {
 
     // Next, check each column.
     // Next, check each square in the grid.
-    printf("If you made it here, the rows must be valid.\n");
+    DP("Rows valid.\n")
 }
 
 void col_valid(const int* const board) {
@@ -174,7 +176,7 @@ void col_valid(const int* const board) {
 
     // Next, check each column.
     // Next, check each square in the grid.
-    printf("If you made it here, the cols must be valid.\n");
+    DP("Columns valid.\n")
 }
 
 
@@ -182,6 +184,7 @@ void square_valid(const int* const board) {
     // Use a list of bools to tell if it's in the set.
     struct coord nums[NCOLS+1]; // add 1 so that we can index by num, nums[0] is invalid
     
+
     const int SUBSQUARE_LEN = (int)sqrt(NROWS);
     const int NUM_SUBSQUARES = NROWS / SUBSQUARE_LEN;
 
@@ -190,21 +193,36 @@ void square_valid(const int* const board) {
         const int max_row = min_row + SUBSQUARE_LEN;
 
         for(int subsquare_col = 0; subsquare_col < NUM_SUBSQUARES; subsquare_col++) {
+            // Reset what we've seen in this subsquare
+            for(int i = 0; i < NCOLS+1; i++) 
+                nums[i] = (struct coord) {.seen = false, .r = -1, .c = -1};
+
             const int min_col = SUBSQUARE_LEN * subsquare_col;
             const int max_col = min_col + SUBSQUARE_LEN;
 
             // Traverse through each row in the subsquare rows.
             for(int r = min_row; r < max_row; r++) {
+                const int* const row = board + r * NCOLS;
+
                 for(int c = min_col; c < max_col; c++) {
-                    const int* const row = board + r * subsquare_row * NCOLS;
-                    int val = row[c * subsquare_col];
+                    const int col = c;
+                    int val = row[col];
                     check_if_seen(val, r, c, nums);
                 }
-            }
-        }
-    }
-    printf("If you made it here, the squares must be valid.\n");
+            } // check loop
+        } // subsquare col
+    } // subsquare row
+    DP("Subsquares are valid.\n")
 }
+
+/**
+ * While there are spaces still on the board,
+ * try to fill it with a value (starting with 1).
+ * See if the board is still valid and/or complete.
+ * Otherwise, backtrack and try another number.
+ */
+//void solve(int* const board) {
+//}
 
 
 int main(int argc, char** argv) {
@@ -216,11 +234,6 @@ int main(int argc, char** argv) {
 	// Get string input from stdin
     const char* const buf = read_file(argv[1]);
     int* board = create_board(buf);
-    // Copy 1-d board into 2-d thingy (TODO this may be no better than previous 2d board)
-    //int board[NROWS][NCOLS];
-    //memcpy(board, b, NROWS*NCOLS*sizeof(*b)); // don't trust!
-                                              // TODO see if board[][] works (I doubt it will)
-                                              // I don't think it does, just use int* for now
 
     D(print_board((const int* const)board);)
 
