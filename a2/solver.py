@@ -95,8 +95,8 @@ for sub_x, sub_y in itertools.product(range(3), repeat=2):
 
     for num in range(9):
         num_in_sub = grid[rmin:rmax, cmin:cmax, num].flatten()
-        print(num_in_sub)
-        print('-'*50)
+        #print(num_in_sub)
+        #print('-'*50)
         solver.add(exactly_one(num_in_sub))
 
 #exit()
