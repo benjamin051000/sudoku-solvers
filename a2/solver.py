@@ -102,9 +102,12 @@ for sub_x, sub_y in itertools.product(range(3), repeat=2):
 # Now, set all the ones we already have to True.
 for r in range(9):
     for c in range(9):
-        if (v := matrix[r][c]):
-            # Set this boolean variable to True
-            solver.add(grid[r][c][v-1] == True)
+        try:
+            if (v := matrix[r][c]):
+                # Set this boolean variable to True
+                solver.add(grid[r][c][v-1] == True)
+        except SyntaxError:
+            print("Please use CPython version >= 3.8")
 
 ##################################################
 
