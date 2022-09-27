@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from pprint import pprint
 from sys import argv
 import itertools
@@ -107,9 +108,10 @@ for r in range(9):
 
 ##################################################
 
-if not solver.check():
+if solver.check() == z3.unsat:
     # Board is invalid.
-    pass
+    print("Board is invalid!")
+    exit()
 
 model = solver.model()
 
