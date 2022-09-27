@@ -18,8 +18,6 @@ with open(filename) as f:
 tiles = [n for n in text.split(',') if n]
 
 matrix = np.array(tiles).reshape(9,9).astype(int)
-print("Initial\n", matrix)
-
 
 # For each cell (9x9 cells total), create 9 variables that
 # represent the presence (or absence) of that number.
@@ -99,6 +97,36 @@ for sub_x, sub_y in itertools.product(range(3), repeat=2):
         #print('-'*50)
         solver.add(exactly_one(num_in_sub))
 
-#exit()
-print(solver.check())
-#print(solver.model())
+
+# Now, set all the ones we already have to True.
+for r in range(9):
+    for c in range(9):
+        if (v := matrix[r][c]):
+            # Set this boolean variable to True
+            solver.add(grid[r][c][v-1] == True)
+
+##################################################
+
+if not solver.check():
+    # Board is invalid.
+    pass
+
+model = solver.model()
+
+def print_model():
+    new_board = np.zeros((9,9))
+
+    for r, c, v in itertools.product(range(9), repeat=3):
+        if model.evaluate(grid[r][c][v]):
+            new_board[r][c] = v
+
+    # Print the final board
+    for r in range(9):
+        for c in range(9):
+            print(f"{int(new_board[r][c])+1},", end="")
+
+        print()
+
+
+print_model()
+
